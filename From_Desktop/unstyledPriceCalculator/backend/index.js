@@ -6,11 +6,9 @@ var app = express();
 
 // The database
 //const MongoClient = require('mongodb').MongoClient;
-const express = require('express');
 const { MongoClient } = require("mongodb");
 const uri = "mongodb://127.0.0.1:27017";
 
-const app = express();
 const port = 8000; // Port de ton site web
 const mongoUrl = "mongodb://localhost:27017";
 const dbName = "TestDB";
