@@ -6,11 +6,18 @@ var app = express();
 
 // The database
 //const MongoClient = require('mongodb').MongoClient;
+const express = require('express');
 const { MongoClient } = require("mongodb");
 const uri = "mongodb://127.0.0.1:27017";
 
+const app = express();
+const port = 8000; // Port de ton site web
+const mongoUrl = "mongodb://localhost:27017";
+const dbName = "TestDB";
 
+app.use(express.json()); // Pour parser les données JSON
 
+let db;
 
 var options = {
     index: "myWebPage.html"
@@ -48,48 +55,44 @@ app.get('/api/storeQuote', function(req, res){
     var d = req.query.days;
     console.log("Storing quote: "+n+" "+s+" "+d)
 
-    // Database stuff
-    // Create a new MongoClient
-    const client = new MongoClient(uri);
-    async function run() {
-    try {
-        // Connect the client to the server (optional starting in v4.7)
-        //await client.connect();
-        // Establish and verify connection
-        //await client.db("admin").command({ ping: 1 });
-        //console.log("Connected successfully to server");
-        console.log('Start the database stuff');
-        //Write databse Insert/Update/Query code here..
-        var dbo = client.db("mydb");
-        var myobj = { quoteName: n, salary: s, days: d };
-        await dbo.collection("quotes").insertOne(myobj, function(err, res) {
-            if (err) {
-                console.log(err); 
-                throw err;
-            }
-            console.log("1 quote inserted");
-        }); 
-        console.log('End the database stuff');
+    // Connexion MongoDB
+MongoClient.connect(mongoUrl, { useUnifiedTopology: true })
+  .then((client) => {
+    db = client.db(dbName);
+    console.log("✅ Connecté à MongoDB");
 
-    } finally {
-        // Ensures that the client will close when you finish/error
-        await client.close();
-    }
-    }
-    run().catch(console.dir);
+    // Démarre le serveur une fois connecté à MongoDB
+    app.listen(port, () => {
+      console.log(`🚀 Serveur Express en ligne sur http://localhost:${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Erreur de connexion à MongoDB:", err);
+  });
 
-
-
-    res.send("stored "+n)
+// ROUTE POST pour enregistrer un utilisateur
+app.post('/visiteurs', async (req, res) => {
+  try {
+    const data = req.body;
+    const collection = db.collection('visiteurs');
+    const result = await collection.insertOne(data);
+    res.status(201).json({ message: 'Donnée insérée', id: result.insertedId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
-app.use(express.static(dir, options));
-
-// 404 page
-app.use(function ( req, res, next) {
-    res.send('This page does not exist!')
+// ROUTE GET pour consulter les visiteurs
+app.get('/visiteurs', async (req, res) => {
+  try {
+    const collection = db.collection('visiteurs');
+    const visiteurs = await collection.find().toArray();
+    res.json(visiteurs);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des données' });
+  }
 });
 
-app.listen(8000, function () {
-    console.log('Listening on http://localhost:8000/');
+    
 });
